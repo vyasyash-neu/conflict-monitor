@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conflict Monitor — US-Iran 2026</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f172a;color:#e2e8f0;overflow:hidden;height:100vh}
+.header{background:#020617;border-bottom:1px solid #1e293b;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;height:48px}
+.header h1{font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px}
+.pulse{width:10px;height:10px;background:#ef4444;border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.badge{font-size:11px;background:#1e293b;color:#94a3b8;padding:2px 8px;border-radius:4px}
+.header-right{display:flex;align-items:center;gap:12px;font-size:13px;color:#94a3b8}
+.tabs{display:flex;gap:4px}
+.tab{padding:4px 12px;border-radius:6px;cursor:pointer;font-size:12px;background:#1e293b;color:#94a3b8;border:none}
+.tab.active{background:#2563eb;color:white}
+.layout{display:flex;height:calc(100vh - 48px)}
+.sidebar{width:280px;background:#020617;border-right:1px solid #1e293b;overflow-y:auto;padding:12px;flex-shrink:0}
+.stat-card{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:12px;margin-bottom:8px}
+.stat-label{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#64748b}
+.stat-value{font-size:22px;font-weight:700;margin-top:2px}
+.stat-value.blue{color:#60a5fa}.stat-value.orange{color:#fb923c}.stat-value.red{color:#f87171}
+.cat-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0;font-size:12px}
+.cat-dot{width:8px;height:8px;border-radius:50%;margin-right:6px;flex-shrink:0}
+.cat-name{color:#cbd5e1;display:flex;align-items:center}
+.cat-count{color:#64748b}
+.filter-select,.filter-input{width:100%;background:#1e293b;border:1px solid #334155;border-radius:8px;padding:8px 10px;color:white;font-size:12px;margin-bottom:8px;outline:none}
+.filter-select:focus,.filter-input:focus{border-color:#2563eb}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.map-container{height:50%;position:relative}
+#map{width:100%;height:100%}
+.event-list{height:50%;overflow-y:auto;border-top:1px solid #1e293b;padding:8px}
+.event-card{background:#1e293b;border:1px solid #334155;border-radius:8px;padding:10px;margin-bottom:6px;cursor:pointer;transition:border-color .2s}
+.event-card:hover{border-color:#475569}
+.event-header{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.event-cat{font-size:10px;color:#94a3b8}
+.conf-badge{font-size:10px;padding:1px 6px;border-radius:10px;color:white;margin-left:auto}
+.conf-high{background:#059669}.conf-medium{background:#d97706}.conf-low{background:#ea580c}.conf-unverified{background:#dc2626}
+.event-summary{font-size:13px;line-height:1.4;color:#e2e8f0}
+.event-meta{display:flex;gap:10px;margin-top:6px;font-size:11px;color:#64748b}
+.detail-panel{width:380px;background:#020617;border-left:1px solid #1e293b;overflow-y:auto;padding:16px;flex-shrink:0;display:none}
+.detail-panel.open{display:block}
+.detail-back{font-size:11px;color:#64748b;cursor:pointer;margin-bottom:12px}
+.detail-back:hover{color:white}
+.detail-title{font-size:16px;font-weight:600;line-height:1.4;margin-bottom:12px}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.detail-box{background:#1e293b;border-radius:8px;padding:10px}
+.detail-box .label{font-size:10px;color:#64748b}
+.detail-box .value{font-size:13px;margin-top:2px}
+.detail-box .big{font-size:24px;font-weight:700;color:#fb923c}
+.chat-panel{flex:1;display:flex;flex-direction:column;height:100%}
+.chat-messages{flex:1;overflow-y:auto;padding:12px}
+.chat-empty{text-align:center;color:#64748b;margin-top:40px;font-size:13px;line-height:1.6}
+.chat-msg{margin-bottom:10px;max-width:80%}
+.chat-msg.user{margin-left:auto}
+.chat-msg.ai{margin-right:auto}
+.chat-bubble{padding:10px 14px;border-radius:10px;font-size:13px;line-height:1.5;white-space:pre-wrap}
+.chat-msg.user .chat-bubble{background:#2563eb;color:white}
+.chat-msg.ai .chat-bubble{background:#334155;color:#e2e8f0}
+.chat-input-row{padding:10px;border-top:1px solid #1e293b;display:flex;gap:8px}
+.chat-input{flex:1;background:#1e293b;border:1px solid #334155;border-radius:8px;padding:8px 12px;color:white;font-size:13px;outline:none}
+.chat-input:focus{border-color:#2563eb}
+.chat-send{background:#2563eb;color:white;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px}
+.chat-send:hover{background:#1d4ed8}
+.chat-send:disabled{opacity:.5}
+.loading{color:#64748b;font-size:13px;animation:pulse 1.5s infinite}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1><span class="pulse"></span> Conflict Monitor <span class="badge">US-Iran 2026</span></h1>
+  <div class="header-right">
+    <span id="event-count">Loading...</span>
+    <div class="tabs">
+      <button class="tab active" onclick="switchView('events')">Map & Events</button>
+      <button class="tab" onclick="switchView('chat')">AI Chat</button>
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="stat-card"><div class="stat-label">Total Events</div><div class="stat-value blue" id="stat-total">—</div></div>
+    <div class="stat-card"><div class="stat-label">Avg Severity</div><div class="stat-value orange" id="stat-severity">—</div></div>
+    <div class="stat-card" id="cat-breakdown"><div class="stat-label">By Category</div></div>
+    <div class="stat-card" id="conf-breakdown"><div class="stat-label">Confidence</div></div>
+    <div class="stat-label" style="margin:8px 0 4px">Filter</div>
+    <select class="filter-select" id="filter-cat" onchange="applyFilters()">
+      <option value="all">All Categories</option>
+      <option value="battle">Battle</option>
+      <option value="explosion_remote_violence">Airstrike/Missile</option>
+      <option value="violence_against_civilians">Civilian Violence</option>
+      <option value="protest">Protest</option>
+      <option value="strategic_development">Strategic Dev.</option>
+      <option value="naval_engagement">Naval</option>
+      <option value="cyber_attack">Cyber Attack</option>
+    </select>
+    <input class="filter-input" id="filter-search" placeholder="Search events..." oninput="applyFilters()">
+  </div>
+
+  <!-- Events View -->
+  <div class="main" id="view-events">
+    <div class="map-container"><div id="map"></div></div>
+    <div class="event-list" id="event-list"></div>
+  </div>
+
+  <!-- Chat View -->
+  <div class="chat-panel" id="view-chat" style="display:none">
+    <div class="chat-messages" id="chat-messages">
+      <div class="chat-empty">Ask questions about the conflict.<br>e.g. "What happened in Tehran?" or "Any naval engagements?"</div>
+    </div>
+    <div class="chat-input-row">
+      <input class="chat-input" id="chat-input" placeholder="Ask about the conflict..." onkeydown="if(event.key==='Enter')sendChat()">
+      <button class="chat-send" id="chat-send" onclick="sendChat()">Ask</button>
+    </div>
+  </div>
+
+  <!-- Detail Panel -->
+  <div class="detail-panel" id="detail-panel">
+    <div class="detail-back" onclick="closeDetail()">← Back to list</div>
+    <div id="detail-content"></div>
+  </div>
+</div>
+
+<script>
+const API='http://localhost:8000';
+const CAT_COLORS={battle:'#ef4444',explosion_remote_violence:'#f97316',violence_against_civilians:'#dc2626',protest:'#eab308',riot:'#f59e0b',strategic_development:'#3b82f6',naval_engagement:'#06b6d4',cyber_attack:'#8b5cf6',humanitarian_incident:'#ec4899'};
+const CAT_LABELS={battle:'Battle',explosion_remote_violence:'Airstrike/Missile',violence_against_civilians:'Civilian Violence',protest:'Protest',riot:'Riot',strategic_development:'Strategic Dev.',naval_engagement:'Naval',cyber_attack:'Cyber Attack',humanitarian_incident:'Humanitarian'};
+
+let allEvents=[], map, markers=[];
+
+// Init map
+function initMap(){
+  map=L.map('map',{zoomControl:true}).setView([32,52],5);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+    attribution:'&copy; CartoDB',maxZoom:18
+  }).addTo(map);
+}
+
+function confClass(c){return c==='high'||c==='confirmed'?'conf-high':c==='medium'?'conf-medium':c==='low'?'conf-low':'conf-unverified'}
+
+function renderEvents(events){
+  const el=document.getElementById('event-list');
+  el.innerHTML=`<div style="font-size:11px;color:#64748b;margin-bottom:6px">${events.length} events</div>`+
+    events.map(e=>`
+    <div class="event-card" onclick='showDetail(${JSON.stringify(e).replace(/'/g,"\\'")})'> 
+      <div class="event-header">
+        <span class="cat-dot" style="background:${CAT_COLORS[e.category]||'#666'}"></span>
+        <span class="event-cat">${CAT_LABELS[e.category]||e.category}</span>
+        <span class="conf-badge ${confClass(e.confidence)}">${e.confidence} ${Math.round((e.confidence_score||0)*100)}%</span>
+      </div>
+      <div class="event-summary">${e.summary||'No summary'}</div>
+      <div class="event-meta">
+        <span>📍 ${e.location_name||e.country||'Unknown'}</span>
+        ${e.severity?`<span>⚡ ${e.severity}/10</span>`:''}
+        ${e.event_time?`<span style="margin-left:auto">${new Date(e.event_time).toLocaleString()}</span>`:''}
+      </div>
+    </div>`).join('');
+}
+
+function updateMarkers(events){
+  markers.forEach(m=>map.removeLayer(m));markers=[];
+  events.forEach(e=>{
+    if(!e.lat||!e.lng)return;
+    const sz=Math.max(6,Math.min(18,(e.severity||5)*2));
+    const m=L.circleMarker([e.lat,e.lng],{
+      radius:sz/2, fillColor:CAT_COLORS[e.category]||'#666',
+      color:'#fff',weight:1,opacity:.8,fillOpacity:.7
+    }).addTo(map);
+    m.bindPopup(`<b>${CAT_LABELS[e.category]||e.category}</b><br>${e.summary||''}<br><small>Confidence: ${e.confidence} ${Math.round((e.confidence_score||0)*100)}%</small>`);
+    markers.push(m);
+  });
+}
+
+function showDetail(e){
+  const p=document.getElementById('detail-panel');
+  p.classList.add('open');
+  document.getElementById('detail-content').innerHTML=`
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+      <span class="cat-dot" style="background:${CAT_COLORS[e.category]}"></span>
+      <span style="font-size:12px">${CAT_LABELS[e.category]||e.category}</span>
+      ${e.sub_type?`<span style="font-size:11px;color:#64748b">/ ${e.sub_type}</span>`:''}
+      <span class="conf-badge ${confClass(e.confidence)}" style="margin-left:auto">${e.confidence} ${Math.round((e.confidence_score||0)*100)}%</span>
+    </div>
+    <div class="detail-title">${e.summary||'No summary'}</div>
+    <div class="detail-grid">
+      <div class="detail-box"><div class="label">Location</div><div class="value">${e.location_name||'Unknown'}</div><div style="font-size:11px;color:#64748b">${e.country||''}</div>${e.lat?`<div style="font-size:10px;color:#475569;margin-top:2px">${e.lat.toFixed(4)}, ${e.lng.toFixed(4)}</div>`:''}</div>
+      <div class="detail-box"><div class="label">Severity</div><div class="big">${e.severity||'?'}/10</div></div>
+      <div class="detail-box"><div class="label">Actor 1</div><div class="value">${e.actor1||'Unknown'}</div></div>
+      <div class="detail-box"><div class="label">Actor 2</div><div class="value">${e.actor2||'Unknown'}</div></div>
+    </div>
+    <div class="detail-box"><div class="label">Time</div><div class="value">${e.event_time?new Date(e.event_time).toLocaleString():'Unknown'}</div></div>
+    ${e.lat?`<div style="margin-top:8px"><button onclick="map.flyTo([${e.lat},${e.lng}],8)" style="background:#2563eb;color:white;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px">📍 Fly to location</button></div>`:''}
+  `;
+  if(e.lat&&e.lng) map.flyTo([e.lat,e.lng],7);
+}
+
+function closeDetail(){document.getElementById('detail-panel').classList.remove('open')}
+
+function applyFilters(){
+  const cat=document.getElementById('filter-cat').value;
+  const q=document.getElementById('filter-search').value.toLowerCase();
+  const f=allEvents.filter(e=>{
+    if(cat!=='all'&&e.category!==cat)return false;
+    if(q&&!(e.summary||'').toLowerCase().includes(q)&&!(e.location_name||'').toLowerCase().includes(q)&&!(e.country||'').toLowerCase().includes(q))return false;
+    return true;
+  });
+  renderEvents(f);updateMarkers(f);
+}
+
+async function fetchData(){
+  try{
+    const[sRes,eRes]=await Promise.all([fetch(`${API}/api/events/stats`),fetch(`${API}/api/events/geo?limit=500`)]);
+    const stats=await sRes.json(),geo=await eRes.json();
+    allEvents=geo.events||[];
+    document.getElementById('event-count').textContent=`${stats.total_events} events tracked`;
+    document.getElementById('stat-total').textContent=stats.total_events;
+    document.getElementById('stat-severity').textContent=(stats.avg_severity||0).toFixed(1)+'/10';
+    let catHTML='<div class="stat-label">By Category</div>';
+    (stats.by_category||[]).forEach(c=>{catHTML+=`<div class="cat-row"><span class="cat-name"><span class="cat-dot" style="background:${CAT_COLORS[c.category]||'#666'}"></span>${CAT_LABELS[c.category]||c.category}</span><span class="cat-count">${c.count}</span></div>`});
+    document.getElementById('cat-breakdown').innerHTML=catHTML;
+    let confHTML='<div class="stat-label">Confidence</div>';
+    (stats.by_confidence||[]).forEach(c=>{confHTML+=`<div class="cat-row"><span class="conf-badge ${confClass(c.confidence)}">${c.confidence}</span><span class="cat-count">${c.count}</span></div>`});
+    document.getElementById('conf-breakdown').innerHTML=confHTML;
+    applyFilters();
+  }catch(err){
+    document.getElementById('event-count').textContent='⚠️ API unreachable — make sure localhost:8000 is running';
+    console.error('Fetch error:',err);
+  }
+}
+
+function switchView(v){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('view-events').style.display=v==='events'?'flex':'none';
+  document.getElementById('view-chat').style.display=v==='chat'?'flex':'none';
+  if(v==='events')setTimeout(()=>map.invalidateSize(),100);
+}
+
+// Chat
+let chatMessages=[];
+async function sendChat(){
+  const inp=document.getElementById('chat-input');
+  const q=inp.value.trim();if(!q)return;
+  inp.value='';
+  chatMessages.push({role:'user',text:q});
+  renderChat();
+  document.getElementById('chat-send').disabled=true;
+  try{
+    const r=await fetch(`${API}/api/rag/query`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q})});
+    const d=await r.json();
+    chatMessages.push({role:'ai',text:d.answer,count:d.events_used});
+  }catch(e){chatMessages.push({role:'ai',text:'Error: Could not reach API'})}
+  document.getElementById('chat-send').disabled=false;
+  renderChat();
+}
+
+function renderChat(){
+  const el=document.getElementById('chat-messages');
+  if(!chatMessages.length){el.innerHTML='<div class="chat-empty">Ask questions about the conflict.<br>e.g. "What happened in Tehran?" or "Any naval engagements?"</div>';return}
+  el.innerHTML=chatMessages.map(m=>`<div class="chat-msg ${m.role}"><div class="chat-bubble">${m.text}</div>${m.count?`<div style="font-size:10px;color:#64748b;margin-top:2px">Based on ${m.count} events</div>`:''}</div>`).join('');
+  el.scrollTop=el.scrollHeight;
+}
+
+// Init
+initMap();
+fetchData();
+setInterval(fetchData,30000);
+</script>
+</body>
+</html>

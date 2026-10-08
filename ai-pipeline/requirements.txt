@@ -1,0 +1,8 @@
+kafka-python-ng
+groq
+psycopg2-binary
+qdrant-client
+sentence-transformers
+geopy
+pydantic
+python-snappy
