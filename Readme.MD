@@ -150,7 +150,7 @@ Expose your conflict database as tools for Claude or any MCP-compatible AI agent
 ### 1. Clone and configure
 
 ```bash
-git clone https://github.com/yashvyas/conflict-monitor.git
+git clone https://github.com/vyasyash-neu/conflict-monitor.git
 cd conflict-monitor
 cp .env.example .env
 # Edit .env with your API keys
@@ -394,7 +394,7 @@ docker compose down -v
 
 **Yash Vyas** — MS Computer Science, Northeastern University
 - [LinkedIn](https://www.linkedin.com/in/vyas-yash/)
-- [GitHub](https://github.com/yashvyas)
+- [GitHub](https://github.com/vyasyash-neu)
 
 ---
 
